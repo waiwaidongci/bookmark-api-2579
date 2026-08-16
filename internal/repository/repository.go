@@ -259,7 +259,7 @@ func (r *Repository) TagStats(ctx context.Context) (model.TagStatsResult, error)
 	}
 	defer rows.Close()
 
-	var counts map[string]int64
+	counts := make(map[string]int64)
 	for rows.Next() {
 		var tags string
 		if err := rows.Scan(&tags); err != nil {
@@ -276,11 +276,14 @@ func (r *Repository) TagStats(ctx context.Context) (model.TagStatsResult, error)
 		return model.TagStatsResult{}, fmt.Errorf("iterate bookmark tags: %w", err)
 	}
 
-	result := model.TagStatsResult{}
+	result := model.TagStatsResult{Tags: make([]model.TagStat, 0, len(counts))}
 	for tag, count := range counts {
 		result.Tags = append(result.Tags, model.TagStat{Tag: tag, Count: count})
 		result.Total += count
 	}
+	sort.Slice(result.Tags, func(i, j int) bool {
+		return result.Tags[i].Tag < result.Tags[j].Tag
+	})
 	return result, nil
 }
 
