@@ -38,3 +38,13 @@ type ListResult struct {
 	Page     int        `json:"page"`
 	PageSize int        `json:"page_size"`
 }
+
+type TagStat struct {
+	Tag   string `json:"tag"`
+	Count int64  `json:"count"`
+}
+
+type TagStatsResult struct {
+	Tags  []TagStat `json:"tags"`
+	Total int64     `json:"total"`
+}

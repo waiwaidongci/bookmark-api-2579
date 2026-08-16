@@ -252,6 +252,38 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (r *Repository) TagStats(ctx context.Context) (model.TagStatsResult, error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT tags FROM bookmarks")
+	if err != nil {
+		return model.TagStatsResult{}, fmt.Errorf("query bookmark tags: %w", err)
+	}
+	defer rows.Close()
+
+	var counts map[string]int64
+	for rows.Next() {
+		var tags string
+		if err := rows.Scan(&tags); err != nil {
+			return model.TagStatsResult{}, fmt.Errorf("scan bookmark tags: %w", err)
+		}
+		for _, tag := range strings.Split(tags, ",") {
+			tag = strings.TrimSpace(tag)
+			if tag != "" {
+				counts[tag]++
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return model.TagStatsResult{}, fmt.Errorf("iterate bookmark tags: %w", err)
+	}
+
+	result := model.TagStatsResult{}
+	for tag, count := range counts {
+		result.Tags = append(result.Tags, model.TagStat{Tag: tag, Count: count})
+		result.Total += count
+	}
+	return result, nil
+}
+
 func (r *Repository) IncrementClickCount(ctx context.Context, id int64) (model.Bookmark, error) {
 	result, err := r.db.ExecContext(
 		ctx,

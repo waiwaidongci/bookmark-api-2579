@@ -141,6 +141,10 @@ func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Book
 	return s.repo.IncrementClickCount(ctx, id)
 }
 
+func (s *Service) TagStats(ctx context.Context) (model.TagStatsResult, error) {
+	return s.repo.TagStats(ctx)
+}
+
 func validateBookmark(bookmark model.Bookmark) error {
 	titleLength := utf8.RuneCountInString(bookmark.Title)
 	if titleLength < 1 || titleLength > 255 {

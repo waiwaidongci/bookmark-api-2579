@@ -19,6 +19,7 @@ func New(h *handler.Handler) *gin.Engine {
 		{
 			bookmarks.POST("", h.Create)
 			bookmarks.GET("", h.List)
+			bookmarks.GET("/stats/tags", h.TagStats)
 			bookmarks.GET("/:id", h.Get)
 			bookmarks.PUT("/:id", h.Update)
 			bookmarks.DELETE("/:id", h.Delete)

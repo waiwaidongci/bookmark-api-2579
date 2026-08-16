@@ -60,6 +60,15 @@ func (h *Handler) List(c *gin.Context) {
 	respondOK(c, result)
 }
 
+func (h *Handler) TagStats(c *gin.Context) {
+	result, err := h.svc.TagStats(c.Request.Context())
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+	respondOK(c, result)
+}
+
 func (h *Handler) Get(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
