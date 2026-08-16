@@ -46,14 +46,6 @@ func (s *Service) Create(ctx context.Context, input model.CreateBookmarkInput) (
 		return model.Bookmark{}, err
 	}
 
-	exists, err := s.repo.ExistsByURL(ctx, bookmark.URL, 0)
-	if err != nil {
-		return model.Bookmark{}, err
-	}
-	if exists {
-		return model.Bookmark{}, ErrDuplicateURL
-	}
-
 	return s.repo.Create(ctx, bookmark)
 }
 
