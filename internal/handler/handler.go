@@ -71,33 +71,13 @@ func (h *Handler) Export(c *gin.Context) {
 		limit = parsed
 	}
 
-	rows, err := h.svc.ExportRows(c.Request.Context())
+	items, err := h.svc.Export(c.Request.Context())
 	if err != nil {
 		h.handleServiceError(c, err)
 		return
 	}
-
-	items := make([]model.Bookmark, 0)
-	for rows.Next() && (limit == 0 || len(items) < limit) {
-		var bookmark model.Bookmark
-		if err := rows.Scan(
-			&bookmark.ID,
-			&bookmark.Title,
-			&bookmark.URL,
-			&bookmark.Tags,
-			&bookmark.Note,
-			&bookmark.ClickCount,
-			&bookmark.CreatedAt,
-			&bookmark.UpdatedAt,
-		); err != nil {
-			h.handleServiceError(c, err)
-			return
-		}
-		items = append(items, bookmark)
-	}
-	if err := rows.Err(); err != nil {
-		h.handleServiceError(c, err)
-		return
+	if limit > 0 && limit < len(items) {
+		items = items[:limit]
 	}
 	respondOK(c, gin.H{"items": items})
 }

@@ -52,7 +52,7 @@ func (r *Repository) DB() *sql.DB {
 	return r.db
 }
 
-func (r *Repository) ExportRows(ctx context.Context) (*sql.Rows, error) {
+func (r *Repository) Export(ctx context.Context) ([]model.Bookmark, error) {
 	rows, err := r.db.QueryContext(
 		ctx,
 		`SELECT id, title, url, tags, note, click_count, created_at, updated_at
@@ -61,7 +61,29 @@ func (r *Repository) ExportRows(ctx context.Context) (*sql.Rows, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query bookmark export: %w", err)
 	}
-	return rows, nil
+	defer rows.Close()
+
+	items := make([]model.Bookmark, 0)
+	for rows.Next() {
+		var bookmark model.Bookmark
+		if err := rows.Scan(
+			&bookmark.ID,
+			&bookmark.Title,
+			&bookmark.URL,
+			&bookmark.Tags,
+			&bookmark.Note,
+			&bookmark.ClickCount,
+			&bookmark.CreatedAt,
+			&bookmark.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan bookmark export: %w", err)
+		}
+		items = append(items, bookmark)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate bookmark export: %w", err)
+	}
+	return items, nil
 }
 
 func (r *Repository) Migrate(ctx context.Context, migrationFS fs.FS) error {

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"net/url"
 	"sort"
@@ -142,8 +141,8 @@ func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Book
 	return s.repo.IncrementClickCount(ctx, id)
 }
 
-func (s *Service) ExportRows(ctx context.Context) (*sql.Rows, error) {
-	return s.repo.ExportRows(ctx)
+func (s *Service) Export(ctx context.Context) ([]model.Bookmark, error) {
+	return s.repo.Export(ctx)
 }
 
 func validateBookmark(bookmark model.Bookmark) error {
