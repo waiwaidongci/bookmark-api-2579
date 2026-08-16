@@ -30,6 +30,9 @@ func NewService(repo *repository.Repository) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, input model.CreateBookmarkInput) (model.Bookmark, error) {
+	if err := ctx.Err(); err != nil {
+		return model.Bookmark{}, err
+	}
 	bookmark := model.Bookmark{
 		Title: strings.TrimSpace(input.Title),
 		Tags:  normalizeTags(input.Tags),
@@ -58,10 +61,16 @@ func (s *Service) Create(ctx context.Context, input model.CreateBookmarkInput) (
 }
 
 func (s *Service) GetByID(ctx context.Context, id int64) (model.Bookmark, error) {
+	if err := ctx.Err(); err != nil {
+		return model.Bookmark{}, err
+	}
 	return s.repo.GetByID(ctx, id)
 }
 
 func (s *Service) List(ctx context.Context, filter model.ListFilter) (model.ListResult, error) {
+	if err := ctx.Err(); err != nil {
+		return model.ListResult{}, err
+	}
 	filter.Tag = strings.TrimSpace(filter.Tag)
 	filter.Keyword = strings.TrimSpace(filter.Keyword)
 	if filter.Page < 1 {
@@ -88,6 +97,9 @@ func (s *Service) List(ctx context.Context, filter model.ListFilter) (model.List
 }
 
 func (s *Service) Update(ctx context.Context, id int64, input model.UpdateBookmarkInput) (model.Bookmark, error) {
+	if err := ctx.Err(); err != nil {
+		return model.Bookmark{}, err
+	}
 	current, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return model.Bookmark{}, err
@@ -134,10 +146,16 @@ func (s *Service) Update(ctx context.Context, id int64, input model.UpdateBookma
 }
 
 func (s *Service) Delete(ctx context.Context, id int64) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return s.repo.Delete(ctx, id)
 }
 
 func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Bookmark, error) {
+	if err := ctx.Err(); err != nil {
+		return model.Bookmark{}, err
+	}
 	return s.repo.IncrementClickCount(ctx, id)
 }
 
