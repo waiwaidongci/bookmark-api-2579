@@ -107,6 +107,21 @@ func (h *Handler) Delete(c *gin.Context) {
 	respondOK(c, gin.H{"id": id})
 }
 
+func (h *Handler) DeleteBatch(c *gin.Context) {
+	var input model.BatchDeleteInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		respondError(c, http.StatusBadRequest, CodeBadRequest, "invalid request: "+err.Error())
+		return
+	}
+
+	deleted, err := h.svc.DeleteBatch(c.Request.Context(), input.IDs)
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+	respondOK(c, gin.H{"deleted": deleted})
+}
+
 func (h *Handler) IncrementClickCount(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {

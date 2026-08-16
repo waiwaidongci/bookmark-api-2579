@@ -25,6 +25,10 @@ type UpdateBookmarkInput struct {
 	Note  *string `json:"note"`
 }
 
+type BatchDeleteInput struct {
+	IDs []int64 `json:"ids"`
+}
+
 type ListFilter struct {
 	Tag      string
 	Keyword  string

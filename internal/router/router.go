@@ -22,6 +22,7 @@ func New(h *handler.Handler) *gin.Engine {
 			bookmarks.GET("/:id", h.Get)
 			bookmarks.PUT("/:id", h.Update)
 			bookmarks.DELETE("/:id", h.Delete)
+			bookmarks.POST("/batch-delete", h.DeleteBatch)
 			bookmarks.POST("/:id/click", h.IncrementClickCount)
 		}
 	}

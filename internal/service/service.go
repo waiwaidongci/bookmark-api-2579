@@ -137,6 +137,13 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *Service) DeleteBatch(ctx context.Context, ids []int64) (int64, error) {
+	if len(ids) == 0 {
+		return 0, ErrNoFieldsToUpdate
+	}
+	return s.repo.DeleteBatch(ctx, ids)
+}
+
 func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Bookmark, error) {
 	return s.repo.IncrementClickCount(ctx, id)
 }
