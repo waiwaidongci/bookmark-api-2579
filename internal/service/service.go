@@ -19,6 +19,7 @@ var (
 	ErrInvalidTags      = errors.New("tags must be at most 255 characters")
 	ErrInvalidNote      = errors.New("note must be at most 2000 characters")
 	ErrNoFieldsToUpdate = errors.New("at least one field must be provided")
+	ErrInvalidID        = errors.New("bookmark id must be a positive integer")
 )
 
 type Service struct {
@@ -138,10 +139,11 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 }
 
 func (s *Service) DeleteBatch(ctx context.Context, ids []int64) (int64, error) {
-	if len(ids) == 0 {
-		return 0, ErrNoFieldsToUpdate
+	normalized, err := s.normalizeAndValidateBatchIDs(ctx, ids)
+	if err != nil {
+		return 0, err
 	}
-	return s.repo.DeleteBatch(ctx, ids)
+	return s.repo.DeleteBatch(ctx, normalized)
 }
 
 func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Bookmark, error) {

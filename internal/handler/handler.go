@@ -159,6 +159,7 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 		errors.Is(err, service.ErrInvalidURL),
 		errors.Is(err, service.ErrInvalidTags),
 		errors.Is(err, service.ErrInvalidNote),
+		errors.Is(err, service.ErrInvalidID),
 		errors.Is(err, service.ErrNoFieldsToUpdate):
 		respondError(c, http.StatusBadRequest, CodeBadRequest, err.Error())
 	default:

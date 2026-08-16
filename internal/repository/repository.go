@@ -253,19 +253,37 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) DeleteBatch(ctx context.Context, ids []int64) (int64, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin batch delete transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
 	var deleted int64
+	var missing []int64
 	for _, id := range ids {
-		result, err := r.db.ExecContext(ctx, "DELETE FROM bookmarks WHERE id = ?", id)
+		result, err := tx.ExecContext(ctx, "DELETE FROM bookmarks WHERE id = ?", id)
 		if err != nil {
-			return deleted, fmt.Errorf("delete bookmark in batch: %w", err)
+			return 0, fmt.Errorf("delete bookmark in batch: %w", err)
 		}
 		affected, err := result.RowsAffected()
 		if err != nil {
-			return deleted, fmt.Errorf("read deleted bookmark count: %w", err)
+			return 0, fmt.Errorf("read deleted bookmark count: %w", err)
 		}
-		if affected > 0 {
-			deleted++
+		if affected == 0 {
+			missing = append(missing, id)
+			continue
 		}
+		deleted++
+	}
+
+	if len(missing) > 0 {
+		return 0, fmt.Errorf("%w: ids=%v", ErrBookmarkNotFound, missing)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit batch delete transaction: %w", err)
 	}
 	return deleted, nil
 }
