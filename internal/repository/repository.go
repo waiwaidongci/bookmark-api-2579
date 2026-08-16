@@ -52,6 +52,18 @@ func (r *Repository) DB() *sql.DB {
 	return r.db
 }
 
+func (r *Repository) ExportRows(ctx context.Context) (*sql.Rows, error) {
+	rows, err := r.db.QueryContext(
+		ctx,
+		`SELECT id, title, url, tags, note, click_count, created_at, updated_at
+		 FROM bookmarks ORDER BY id`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query bookmark export: %w", err)
+	}
+	return rows, nil
+}
+
 func (r *Repository) Migrate(ctx context.Context, migrationFS fs.FS) error {
 	entries, err := fs.ReadDir(migrationFS, ".")
 	if err != nil {

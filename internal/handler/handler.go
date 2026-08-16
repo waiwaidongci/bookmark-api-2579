@@ -60,6 +60,48 @@ func (h *Handler) List(c *gin.Context) {
 	respondOK(c, result)
 }
 
+func (h *Handler) Export(c *gin.Context) {
+	limit := 0
+	if raw := c.Query("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 1 {
+			respondError(c, http.StatusBadRequest, CodeBadRequest, "invalid limit")
+			return
+		}
+		limit = parsed
+	}
+
+	rows, err := h.svc.ExportRows(c.Request.Context())
+	if err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+
+	items := make([]model.Bookmark, 0)
+	for rows.Next() && (limit == 0 || len(items) < limit) {
+		var bookmark model.Bookmark
+		if err := rows.Scan(
+			&bookmark.ID,
+			&bookmark.Title,
+			&bookmark.URL,
+			&bookmark.Tags,
+			&bookmark.Note,
+			&bookmark.ClickCount,
+			&bookmark.CreatedAt,
+			&bookmark.UpdatedAt,
+		); err != nil {
+			h.handleServiceError(c, err)
+			return
+		}
+		items = append(items, bookmark)
+	}
+	if err := rows.Err(); err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+	respondOK(c, gin.H{"items": items})
+}
+
 func (h *Handler) Get(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {

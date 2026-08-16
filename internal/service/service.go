@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/url"
 	"sort"
@@ -139,6 +140,10 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Bookmark, error) {
 	return s.repo.IncrementClickCount(ctx, id)
+}
+
+func (s *Service) ExportRows(ctx context.Context) (*sql.Rows, error) {
+	return s.repo.ExportRows(ctx)
 }
 
 func validateBookmark(bookmark model.Bookmark) error {
