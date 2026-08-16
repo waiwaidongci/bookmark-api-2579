@@ -253,19 +253,39 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) DeleteBatch(ctx context.Context, ids []int64) (int64, error) {
-	var deleted int64
-	for _, id := range ids {
-		result, err := r.db.ExecContext(ctx, "DELETE FROM bookmarks WHERE id = ?", id)
-		if err != nil {
-			return deleted, fmt.Errorf("delete bookmark in batch: %w", err)
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return deleted, fmt.Errorf("read deleted bookmark count: %w", err)
-		}
-		if affected > 0 {
-			deleted++
-		}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin batch delete transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	placeholders := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	inClause := strings.Join(placeholders, ",")
+
+	var count int64
+	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM bookmarks WHERE id IN ("+inClause+")", args...).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count bookmarks for batch delete: %w", err)
+	}
+	if count != int64(len(ids)) {
+		return 0, ErrBookmarkNotFound
+	}
+
+	result, err := tx.ExecContext(ctx, "DELETE FROM bookmarks WHERE id IN ("+inClause+")", args...)
+	if err != nil {
+		return 0, fmt.Errorf("delete bookmarks in batch: %w", err)
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("read deleted bookmark count: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit batch delete: %w", err)
 	}
 	return deleted, nil
 }
