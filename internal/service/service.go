@@ -142,7 +142,11 @@ func (s *Service) IncrementClickCount(ctx context.Context, id int64) (model.Book
 }
 
 func (s *Service) TagStats(ctx context.Context) (model.TagStatsResult, error) {
-	return s.repo.TagStats(ctx)
+	result, err := s.repo.TagStats(ctx)
+	if err != nil {
+		return model.TagStatsResult{}, err
+	}
+	return normalizeTagStats(result), nil
 }
 
 func validateBookmark(bookmark model.Bookmark) error {

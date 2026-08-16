@@ -66,6 +66,9 @@ func (h *Handler) TagStats(c *gin.Context) {
 		h.handleServiceError(c, err)
 		return
 	}
+	if result.Tags == nil {
+		result.Tags = make([]model.TagStat, 0)
+	}
 	respondOK(c, result)
 }
 
