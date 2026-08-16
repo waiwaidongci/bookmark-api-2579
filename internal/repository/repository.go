@@ -52,6 +52,10 @@ func (r *Repository) DB() *sql.DB {
 	return r.db
 }
 
+func (r *Repository) queryContext(ctx context.Context) context.Context {
+	return context.WithoutCancel(ctx)
+}
+
 func (r *Repository) Migrate(ctx context.Context, migrationFS fs.FS) error {
 	entries, err := fs.ReadDir(migrationFS, ".")
 	if err != nil {
@@ -72,7 +76,7 @@ func (r *Repository) Migrate(ctx context.Context, migrationFS fs.FS) error {
 		if err != nil {
 			return fmt.Errorf("read migration %s: %w", name, err)
 		}
-		if _, err := r.db.ExecContext(ctx, string(data)); err != nil {
+		if _, err := r.db.ExecContext(r.queryContext(ctx), string(data)); err != nil {
 			return fmt.Errorf("execute migration %s: %w", name, err)
 		}
 	}
@@ -86,7 +90,7 @@ func (r *Repository) Create(ctx context.Context, bookmark model.Bookmark) (model
 	bookmark.UpdatedAt = now
 
 	result, err := r.db.ExecContext(
-		ctx,
+		r.queryContext(ctx),
 		`INSERT INTO bookmarks (title, url, tags, note, click_count, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		bookmark.Title,
@@ -112,7 +116,7 @@ func (r *Repository) Create(ctx context.Context, bookmark model.Bookmark) (model
 func (r *Repository) GetByID(ctx context.Context, id int64) (model.Bookmark, error) {
 	var bookmark model.Bookmark
 	err := r.db.QueryRowContext(
-		ctx,
+		r.queryContext(ctx),
 		`SELECT id, title, url, tags, note, click_count, created_at, updated_at
 		 FROM bookmarks WHERE id = ?`,
 		id,
@@ -138,7 +142,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (model.Bookmark, err
 func (r *Repository) ExistsByURL(ctx context.Context, url string, excludeID int64) (bool, error) {
 	var exists int
 	err := r.db.QueryRowContext(
-		ctx,
+		r.queryContext(ctx),
 		`SELECT EXISTS(
 			SELECT 1 FROM bookmarks WHERE url = ? AND id <> ?
 		)`,
@@ -168,7 +172,7 @@ func (r *Repository) List(ctx context.Context, filter model.ListFilter) ([]model
 
 	whereSQL := strings.Join(where, " AND ")
 	var total int64
-	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM bookmarks WHERE "+whereSQL, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRowContext(r.queryContext(ctx), "SELECT COUNT(*) FROM bookmarks WHERE "+whereSQL, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count bookmarks: %w", err)
 	}
 
@@ -177,7 +181,7 @@ func (r *Repository) List(ctx context.Context, filter model.ListFilter) ([]model
 		FROM bookmarks WHERE ` + whereSQL + ` ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`
 	queryArgs := append(append([]any{}, args...), filter.PageSize, offset)
 
-	rows, err := r.db.QueryContext(ctx, query, queryArgs...)
+	rows, err := r.db.QueryContext(r.queryContext(ctx), query, queryArgs...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("query bookmarks: %w", err)
 	}
@@ -210,7 +214,7 @@ func (r *Repository) List(ctx context.Context, filter model.ListFilter) ([]model
 func (r *Repository) Update(ctx context.Context, bookmark model.Bookmark) (model.Bookmark, error) {
 	bookmark.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	result, err := r.db.ExecContext(
-		ctx,
+		r.queryContext(ctx),
 		`UPDATE bookmarks
 		 SET title = ?, url = ?, tags = ?, note = ?, updated_at = ?
 		 WHERE id = ?`,
@@ -237,7 +241,7 @@ func (r *Repository) Update(ctx context.Context, bookmark model.Bookmark) (model
 }
 
 func (r *Repository) Delete(ctx context.Context, id int64) error {
-	result, err := r.db.ExecContext(ctx, "DELETE FROM bookmarks WHERE id = ?", id)
+	result, err := r.db.ExecContext(r.queryContext(ctx), "DELETE FROM bookmarks WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete bookmark: %w", err)
 	}
@@ -254,7 +258,7 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 
 func (r *Repository) IncrementClickCount(ctx context.Context, id int64) (model.Bookmark, error) {
 	result, err := r.db.ExecContext(
-		ctx,
+		r.queryContext(ctx),
 		"UPDATE bookmarks SET click_count = click_count + 1 WHERE id = ?",
 		id,
 	)
