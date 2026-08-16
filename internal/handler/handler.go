@@ -138,6 +138,8 @@ func (h *Handler) handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, repository.ErrBookmarkNotFound):
 		respondError(c, http.StatusNotFound, CodeNotFound, err.Error())
+	case errors.Is(err, repository.ErrDuplicateURL):
+		respondError(c, http.StatusConflict, CodeConflict, err.Error())
 	case errors.Is(err, service.ErrDuplicateURL):
 		respondError(c, http.StatusConflict, CodeConflict, err.Error())
 	case errors.Is(err, service.ErrInvalidTitle),

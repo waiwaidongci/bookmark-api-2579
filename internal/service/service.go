@@ -46,7 +46,22 @@ func (s *Service) Create(ctx context.Context, input model.CreateBookmarkInput) (
 		return model.Bookmark{}, err
 	}
 
-	return s.repo.Create(ctx, bookmark)
+	exists, err := s.repo.ExistsByURL(ctx, bookmark.URL, 0)
+	if err != nil {
+		return model.Bookmark{}, err
+	}
+	if exists {
+		return model.Bookmark{}, ErrDuplicateURL
+	}
+
+	created, err := s.repo.Create(ctx, bookmark)
+	if errors.Is(err, repository.ErrDuplicateURL) {
+		return model.Bookmark{}, ErrDuplicateURL
+	}
+	if err != nil {
+		return model.Bookmark{}, err
+	}
+	return created, nil
 }
 
 func (s *Service) GetByID(ctx context.Context, id int64) (model.Bookmark, error) {

@@ -17,7 +17,10 @@ import (
 	"bookmark-api/internal/model"
 )
 
-var ErrBookmarkNotFound = errors.New("bookmark not found")
+var (
+	ErrBookmarkNotFound = errors.New("bookmark not found")
+	ErrDuplicateURL     = errors.New("bookmark url already exists")
+)
 
 type Repository struct {
 	db *sql.DB
@@ -98,6 +101,9 @@ func (r *Repository) Create(ctx context.Context, bookmark model.Bookmark) (model
 		bookmark.UpdatedAt,
 	)
 	if err != nil {
+		if isUniqueConstraintError(err) {
+			return model.Bookmark{}, fmt.Errorf("%w: %v", ErrDuplicateURL, err)
+		}
 		return model.Bookmark{}, fmt.Errorf("insert bookmark: %w", err)
 	}
 
@@ -107,6 +113,10 @@ func (r *Repository) Create(ctx context.Context, bookmark model.Bookmark) (model
 	}
 
 	return r.GetByID(ctx, id)
+}
+
+func isUniqueConstraintError(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "unique constraint failed")
 }
 
 func (r *Repository) GetByID(ctx context.Context, id int64) (model.Bookmark, error) {
